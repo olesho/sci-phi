@@ -1,6 +1,6 @@
-# SCI-AI
+# SCI-PHI
 
-A FastAPI application for processing PDF files with hot reload functionality that excludes the data directory.
+A FastAPI application for processing scientific papers in PDF format.
 
 ## Quick Start
 

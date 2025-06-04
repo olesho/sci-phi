@@ -1,6 +1,6 @@
 # PDF Processor API
 
-A FastAPI application that processes PDF files from URLs and stores information in a SQLite database.
+API for PDF processing.
 
 ## Features
 
