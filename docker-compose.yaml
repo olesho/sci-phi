@@ -1,0 +1,94 @@
+# version: '3.8'
+
+# services:
+#   fastapi-app:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile
+#     ports:
+#       - "8000:80"
+#     environment:
+#       - PYTHONPATH=/fastapi_app
+#     # volumes:
+#       # Uncomment the lines below for development with live reload
+#       # - .:/fastapi_app
+#       # Then override CMD: command: ["uv", "run", "fastapi", "run", "fastapi_app/main.py", "--port", "80", "--host", "0.0.0.0", "--reload"]
+#     restart: unless-stopped
+#     healthcheck:
+#       test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+#       interval: 30s
+#       timeout: 10s
+#       retries: 3
+#       start_period: 40s
+
+version: '3.8'
+
+services:
+  fastapi-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:80"
+    environment:
+      - PYTHONPATH=/fastapi_app
+    volumes:
+      - .:/fastapi_app
+      - model_cache:/root/.cache/datalab/models
+    # command: ["uv", "run", "fastapi", "run", "fastapi_app/main.py", "--port", "80", "--host", "0.0.0.0", "--reload"]
+    command: ["uv", "run", "fastapi", "run", "fastapi_app/main.py", "--port", "80", "--host", "0.0.0.0"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    profiles:
+      - production
+
+  # Development service with hot reload excluding data directory
+  fastapi-app-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:80"
+    environment:
+      - PYTHONPATH=/fastapi_app/fastapi_app
+    volumes:
+      - .:/fastapi_app
+      - model_cache:/root/.cache/datalab/models
+    working_dir: /fastapi_app/fastapi_app
+    command: [
+      "uv", "run", "uvicorn", 
+      "main:app", 
+      "--port", "80", 
+      "--host", "0.0.0.0", 
+      "--reload",
+      "--reload-exclude", "data/*",
+      "--reload-exclude", "*.db",
+      "--reload-exclude", "__pycache__/*"
+    ]
+    restart: unless-stopped
+    profiles:
+      - development
+
+volumes:
+  model_cache:
+    driver: local
+
+# Uncomment this section for development mode
+# x-development: &development
+#   fastapi-app:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile
+#     ports:
+#       - "8000:80"
+#     environment:
+#       - PYTHONPATH=/fastapi_app
+#     volumes:
+#       - .:/fastapi_app
+#     command: ["uv", "run", "fastapi", "run", "fastapi_app/main.py", "--port", "80", "--host", "0.0.0.0", "--reload"]
+#     restart: unless-stopped
