@@ -162,19 +162,19 @@ def trigger_conversion_background(uri: str):
     This is the function to call when a PDF is added.
     """
     try:
-        # Create a new event loop if one doesn't exist
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
-            # No running loop, create a new one
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-        
-        # Schedule the conversion
-        task = asyncio.create_task(convert_pdf_async(uri))
+            # If there's no running loop, run the conversion synchronously
+            asyncio.run(convert_pdf_async(uri))
+            logger.info(f"Converted PDF without running event loop: {uri}")
+            return True
+
+        # We have a running loop, schedule the task in the background
+        loop.create_task(convert_pdf_async(uri))
         logger.info(f"Scheduled background conversion for: {uri}")
         return True
-        
+
     except Exception as e:
         logger.error(f"Failed to schedule conversion for {uri}: {str(e)}")
-        return False 
+        return False
