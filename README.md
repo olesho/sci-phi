@@ -30,6 +30,7 @@ make docker-prod
 ```
 
 See `fastapi_app/README.md` for detailed API documentation.
+The full OpenAPI specification can be found at `docs/openapi.yaml`.
 
 ## FastAPI
 - Using make: ```make dev```
@@ -38,3 +39,5 @@ See `fastapi_app/README.md` for detailed API documentation.
 
 ## Streamlit
 Run: ```uv tool run streamlit run streamlit_app/main.py```
+
+Run `pytest` to execute the API tests.
