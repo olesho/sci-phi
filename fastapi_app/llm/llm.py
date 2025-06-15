@@ -3,11 +3,12 @@ from pydantic import BaseModel
 from .questions import question_list
 from .questions import question_paper
 from .context_utils import (
-    summarize_and_chunk, 
-    estimate_tokens, 
+    summarize_and_chunk,
+    estimate_tokens,
     get_context_limit,
     extract_key_sections
 )
+from models import MODEL_NAMES
 import logging
 
 logger = logging.getLogger(__name__)
@@ -15,13 +16,7 @@ logger = logging.getLogger(__name__)
 class Graph(BaseModel):
     summary: dict[str, str]
 
-model_list = [
-    # "phi4:14b",
-    # "granite3.2:8b", 
-    "deepseek-r1:14b", 
-    # "llama3-chatqa:8b", 
-    # "qwen3:14b",
-]
+model_list = MODEL_NAMES
 
 def extract_summaries(text: str, existing_graph: dict = {}, strategy: str = "intelligent") -> Graph:
     """

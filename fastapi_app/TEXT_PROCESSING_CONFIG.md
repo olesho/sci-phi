@@ -47,6 +47,7 @@ The system automatically handles different model context windows:
 
 | Model | Context Limit (tokens) |
 |-------|----------------------|
+| granite3.3:8b | 16,000 |
 | granite3.2:8b | 8,000 |
 | phi4:14b | 16,000 |
 | deepseek-r1:14b | 16,000 |
