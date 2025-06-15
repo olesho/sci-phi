@@ -158,9 +158,8 @@ if page == "📋 PDF List":
             })
         
         df = pd.DataFrame(df_data)
-        
-        # Display the dataframe
-        st.dataframe(
+
+        df_state = st.dataframe(
             df,
             use_container_width=True,
             hide_index=True,
@@ -169,6 +168,10 @@ if page == "📋 PDF List":
                 "Status": st.column_config.TextColumn("Status", width="small"),
                 "Downloaded": st.column_config.TextColumn("Downloaded", width="small"),
                 "Converted": st.column_config.TextColumn("Converted", width="medium"),
+            },
+            on_select="rerun",
+            selection_mode="single-row",
+            key="pdf_table",
             }
         )
         
@@ -179,9 +182,14 @@ if page == "📋 PDF List":
             options=range(len(pdfs)),
             format_func=lambda i: f"{clean_filename(pdfs[i].get('filename', 'Unknown'))} - {pdfs[i].get('uri', '')[:30]}..."
         )
-        
-        if selected_indices is not None:
-            selected_pdf = pdfs[selected_indices]
+
+        selected_rows = df_state.get("selection", {}).get("rows", []) if isinstance(df_state, dict) else []
+        selected_idx = selected_rows[0] if selected_rows else None
+
+        if selected_idx is not None:
+            st.subheader("PDF Details")
+            selected_pdf = pdfs[selected_idx]
+
             
             col1, col2 = st.columns(2)
             with col1:
