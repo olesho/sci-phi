@@ -151,32 +151,32 @@ if page == "📋 PDF List":
             })
         
         df = pd.DataFrame(df_data)
-        
-        # Display the dataframe
-        st.dataframe(
+        df.insert(0, "Select", False)
+
+        # Display the dataframe with selectable rows
+        edited_df = st.data_editor(
             df,
             use_container_width=True,
             hide_index=True,
             column_config={
+                "Select": st.column_config.CheckboxColumn("Select"),
                 "URI": st.column_config.TextColumn("URI", width="medium"),
                 "Status": st.column_config.TextColumn("Status", width="small"),
                 "Downloaded": st.column_config.TextColumn("Downloaded", width="small"),
                 "Converted": st.column_config.TextColumn("Converted", width="medium"),
                 "Extracted": st.column_config.TextColumn("Extracted", width="medium"),
                 "Last Extraction": st.column_config.TextColumn("Last Extraction", width="medium"),
-            }
+            },
+            disabled=[c for c in df.columns if c != "Select"],
+            key="pdf_table",
         )
-        
-        # Show detailed view for selected PDF
-        st.subheader("PDF Details")
-        selected_indices = st.selectbox(
-            "Select a PDF to view details:",
-            options=range(len(pdfs)),
-            format_func=lambda i: f"{pdfs[i].get('filename', 'Unknown')} - {pdfs[i].get('uri', '')[:30]}..."
-        )
-        
-        if selected_indices is not None:
-            selected_pdf = pdfs[selected_indices]
+
+        selected_rows = edited_df.index[edited_df["Select"]].tolist()
+        selected_idx = selected_rows[0] if selected_rows else None
+
+        if selected_idx is not None:
+            st.subheader("PDF Details")
+            selected_pdf = pdfs[selected_idx]
             
             col1, col2 = st.columns(2)
             with col1:
