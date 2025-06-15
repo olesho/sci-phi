@@ -14,7 +14,7 @@ def main():
     # Change to the fastapi_app directory
     os.chdir(current_dir)
     
-    # Use uv run uvicorn with reload-excludes to exclude the data directory
+    # Use uv run uvicorn with reload-excludes to ignore data/, *.db, and __pycache__/
     cmd = [
         "uv", "run", "uvicorn",
         "main:app",
