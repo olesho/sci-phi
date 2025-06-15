@@ -145,8 +145,6 @@ if page == "📋 PDF List":
                 "Status": "✅ Success" if pdf.get("status") == "success" else "❌ Error",
                 "Downloaded": "✅ Yes" if pdf.get("is_downloaded") else "❌ No",
                 "Converted": conversion_status,
-                "Extracted": extraction_status,
-                "Last Extraction": pdf.get("extraction_completed_at", "")[:19] if pdf.get("extraction_completed_at") else "",
                 "Processed At": pdf.get("processed_at", "")[:19] if pdf.get("processed_at") else ""
             })
         
@@ -162,8 +160,6 @@ if page == "📋 PDF List":
                 "Status": st.column_config.TextColumn("Status", width="small"),
                 "Downloaded": st.column_config.TextColumn("Downloaded", width="small"),
                 "Converted": st.column_config.TextColumn("Converted", width="medium"),
-                "Extracted": st.column_config.TextColumn("Extracted", width="medium"),
-                "Last Extraction": st.column_config.TextColumn("Last Extraction", width="medium"),
             }
         )
         

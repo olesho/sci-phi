@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from typing import List, Optional
+from pathlib import Path
 import json
 from processor import ProcessInputData, process_pdf
 from database import (
@@ -10,7 +11,7 @@ from database import (
 )
 from conversion_service import convert_pdf_async, process_conversion_queue
 from extraction_service import extract_pdf_async, process_extraction_queue, extract_pdf_selective_async
-from config import resolve_file_path
+from config import resolve_file_path, get_pdf_conversion_folder
 from llm.questions import question_list
 from llm.llm import model_list
 import asyncio
@@ -126,8 +127,6 @@ def get_all_pdfs():
                 pdf['text_file_path'] = str(resolve_file_path(pdf['text_file_path']))
             if pdf.get('images_folder_path'):
                 pdf['images_folder_path'] = str(resolve_file_path(pdf['images_folder_path']))
-            if pdf.get('extraction_file_path'):
-                pdf['extraction_file_path'] = str(resolve_file_path(pdf['extraction_file_path']))
         
         return {
             "count": len(pdfs),
@@ -152,8 +151,6 @@ def get_pdf_by_uri(uri: str):
             pdf['text_file_path'] = str(resolve_file_path(pdf['text_file_path']))
         if pdf.get('images_folder_path'):
             pdf['images_folder_path'] = str(resolve_file_path(pdf['images_folder_path']))
-        if pdf.get('extraction_file_path'):
-            pdf['extraction_file_path'] = str(resolve_file_path(pdf['extraction_file_path']))
             
         return pdf
     except HTTPException:
@@ -235,9 +232,6 @@ async def extract_single_pdf(paper_id: int):
         if not pdf.get('is_converted'):
             raise HTTPException(status_code=400, detail="PDF must be converted before extraction")
         
-        if pdf.get('is_extracted'):
-            return {"message": "PDF is already extracted", "pdf": pdf}
-        
         # Use the URI from the PDF record for the async extraction
         result = await extract_pdf_async(pdf['uri'])
         return result
@@ -278,10 +272,12 @@ async def get_extraction_results(paper_id: int):
         if not pdf:
             raise HTTPException(status_code=404, detail="PDF not found")
         
-        if not pdf.get('is_extracted'):
-            raise HTTPException(status_code=400, detail="PDF has not been extracted yet")
-        
-        extraction_file_path = resolve_file_path(pdf.get('extraction_file_path', ''))
+        if pdf.get('extraction_file_path'):
+            extraction_file_path = resolve_file_path(pdf['extraction_file_path'])
+        else:
+            filename = pdf.get('filename') or Path(pdf.get('file_path', '')).name
+            extraction_folder = get_pdf_conversion_folder(filename) / "extraction"
+            extraction_file_path = extraction_folder / "extracted_data.json"
         if not extraction_file_path.exists():
             raise HTTPException(status_code=404, detail="Extraction file not found")
         

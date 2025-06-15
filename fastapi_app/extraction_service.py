@@ -14,8 +14,7 @@ from config import (
     get_pdf_conversion_folder, 
     get_pdf_text_file_path, 
     get_pdf_images_folder_path,
-    resolve_file_path,
-    make_path_relative
+    resolve_file_path
 )
 
 # Setup logging
@@ -64,17 +63,16 @@ async def extract_pdf_async(uri: str) -> Dict:
         
         # Check for existing extraction data to extend
         existing_graph = {}
-        if pdf_info.get('extraction_file_path'):
-            existing_extraction_path = resolve_file_path(pdf_info.get('extraction_file_path', ''))
-            if existing_extraction_path.exists():
-                try:
-                    with open(existing_extraction_path, 'r', encoding='utf-8') as f:
-                        existing_data = json.load(f)
-                        existing_graph = existing_data
-                        logger.info(f"Found existing extraction data with {len(existing_data.get('summaries', []))} summaries and {len(existing_data.get('questions', []))} questions")
-                except Exception as e:
-                    logger.warning(f"Could not read existing extraction data: {str(e)}")
-                    existing_graph = {}
+        existing_extraction_path = get_pdf_conversion_folder(filename) / "extraction" / "extracted_data.json"
+        if existing_extraction_path.exists():
+            try:
+                with open(existing_extraction_path, 'r', encoding='utf-8') as f:
+                    existing_data = json.load(f)
+                    existing_graph = existing_data
+                    logger.info(f"Found existing extraction data with {len(existing_data.get('summaries', []))} summaries and {len(existing_data.get('questions', []))} questions")
+            except Exception as e:
+                logger.warning(f"Could not read existing extraction data: {str(e)}")
+                existing_graph = {}
         
         # Import strategy from config
         from config import TEXT_PROCESSING_STRATEGY
@@ -100,14 +98,11 @@ async def extract_pdf_async(uri: str) -> Dict:
         with open(extraction_file_path, 'w', encoding='utf-8') as f:
             json.dump(extracted_data, f, indent=2, ensure_ascii=False)
         
-        # Store relative path in database for portability
-        extraction_file_relative = make_path_relative(str(extraction_file_path))
-        
         # Update database with successful extraction
         update_extraction_status(
             uri=uri,
             is_extracted=True,
-            extraction_file_path=extraction_file_relative
+            extraction_file_path=str(extraction_file_path)
         )
         
         logger.info(f"Successfully extracted data from PDF: {uri}")
@@ -430,17 +425,16 @@ async def extract_pdf_selective_async(
         
         # Check for existing extraction data to extend
         existing_graph = {}
-        if pdf_info.get('extraction_file_path'):
-            existing_extraction_path = resolve_file_path(pdf_info.get('extraction_file_path', ''))
-            if existing_extraction_path.exists():
-                try:
-                    with open(existing_extraction_path, 'r', encoding='utf-8') as f:
-                        existing_data = json.load(f)
-                        existing_graph = existing_data
-                        logger.info(f"Found existing extraction data")
-                except Exception as e:
-                    logger.warning(f"Could not read existing extraction data: {str(e)}")
-                    existing_graph = {}
+        existing_extraction_path = get_pdf_conversion_folder(filename) / "extraction" / "extracted_data.json"
+        if existing_extraction_path.exists():
+            try:
+                with open(existing_extraction_path, 'r', encoding='utf-8') as f:
+                    existing_data = json.load(f)
+                    existing_graph = existing_data
+                    logger.info(f"Found existing extraction data")
+            except Exception as e:
+                logger.warning(f"Could not read existing extraction data: {str(e)}")
+                existing_graph = {}
         
         # Import strategy from config
         from config import TEXT_PROCESSING_STRATEGY
@@ -469,14 +463,11 @@ async def extract_pdf_selective_async(
         with open(extraction_file_path, 'w', encoding='utf-8') as f:
             json.dump(extracted_data, f, indent=2, ensure_ascii=False)
         
-        # Store relative path in database for portability
-        extraction_file_relative = make_path_relative(str(extraction_file_path))
-        
         # Update database with successful extraction
         update_extraction_status(
             uri=uri,
             is_extracted=True,
-            extraction_file_path=extraction_file_relative
+            extraction_file_path=str(extraction_file_path)
         )
         
         logger.info(f"Successfully extracted selected data from PDF: {uri}")

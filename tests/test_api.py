@@ -101,7 +101,10 @@ def app():
     config = types.ModuleType("config")
     def resolve_file_path(p: str):
         return Path(p)
+    def get_pdf_conversion_folder(filename: str):
+        return Path(filename).parent
     config.resolve_file_path = resolve_file_path
+    config.get_pdf_conversion_folder = get_pdf_conversion_folder
     sys.modules["config"] = config
 
     llm_pkg = types.ModuleType("llm")
