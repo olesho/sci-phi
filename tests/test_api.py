@@ -91,7 +91,10 @@ def app():
     async def extract_pdf_selective_async(uri, fields, models, size):
         return {"extracted": uri, "fields": fields}
     def get_extraction_template():
-        return {"fields": [{"title": "title"}], "models": [{"name": "model1"}]}
+        return {
+            "fields": [{"title": "title"}, {"title": "abstract"}],
+            "models": [{"name": "model1"}],
+        }
     ext.extract_pdf_async = extract_pdf_async
     ext.process_extraction_queue = process_extraction_queue
     ext.extract_pdf_selective_async = extract_pdf_selective_async
@@ -153,3 +156,15 @@ def test_endpoints_from_spec(app):
             else:
                 continue
             assert response.status_code < 500
+
+
+def test_selective_extraction(app):
+    client = TestClient(app)
+    payload = {
+        "selected_fields": ["title", "abstract"],
+        "selected_models": ["model1"],
+        "selected_size": "medium",
+    }
+    response = client.post("/extract/1/selective", json=payload)
+    assert response.status_code == 200
+    assert response.json() == {"extracted": "uri1", "fields": ["title", "abstract"]}
