@@ -41,3 +41,7 @@ The full OpenAPI specification can be found at `docs/openapi.yaml`.
 Run: ```uv tool run streamlit run streamlit_app/main.py```
 
 Run `pytest` to execute the API tests.
+Alternatively run the tests with uv using:
+```bash
+uv run pytest -q
+```
