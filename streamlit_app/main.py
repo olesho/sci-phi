@@ -171,8 +171,7 @@ if page == "📋 PDF List":
             },
             on_select="rerun",
             selection_mode="single-row",
-            key="pdf_table",
-            }
+            key="pdf_table"
         )
         
         # Show detailed view for selected PDF
