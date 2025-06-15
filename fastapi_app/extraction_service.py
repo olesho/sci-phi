@@ -6,6 +6,7 @@ from typing import Dict, Optional, List
 import json
 import datetime
 from llm import llm
+from models import AVAILABLE_MODELS
 from llm.questions import question_list
 from llm.summarize import get_available_summary_types, get_available_sizes
 from database import update_extraction_status, get_processed_pdf
@@ -318,35 +319,8 @@ def get_extraction_template() -> Dict:
             "supported_size": ["small", "medium"],  # Questions typically use smaller sizes
             "description": f"Answer to: {question}"
         })
-    
     # Define models with their context sizes
-    models = [
-        {
-            "name": "deepseek-r1:14b",
-            "context_size": 131072,
-            "description": "DeepSeek R1 14B parameter model"
-        },
-        {
-            "name": "granite3.2:8b", 
-            "context_size": 131072,
-            "description": "Granite 3.2 8B parameter model"
-        },
-        {
-            "name": "phi4:14b",
-            "context_size": 16384,
-            "description": "Phi-4 14B parameter model"
-        },
-        {
-            "name": "llama3-chatqa:8b",
-            "context_size": 8192,
-            "description": "Llama 3 ChatQA 8B parameter model"
-        },
-        {
-            "name": "qwen3:14b",
-            "context_size": 40960,
-            "description": "Qwen 3 14B parameter model"
-        }
-    ]
+    models = AVAILABLE_MODELS
     
     return {
         "fields": fields,

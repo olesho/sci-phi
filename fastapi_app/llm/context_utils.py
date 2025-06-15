@@ -3,16 +3,7 @@ import re
 from typing import List, Dict, Tuple
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-# Model context limits (tokens)
-MODEL_CONTEXT_LIMITS = {
-    "granite3.2:8b": 131072,
-    "phi4:14b": 16384,
-    "deepseek-r1:14b": 131072,
-    "llama3-chatqa:8b": 8192,
-    "qwen3:14b": 40960,
-    # Default fallback
-    "default": 8000
-}
+from models import MODEL_CONTEXT_LIMITS
 
 def get_context_limit(model: str) -> int:
     """Get the context window limit for a specific model."""

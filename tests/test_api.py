@@ -115,9 +115,12 @@ def app():
     questions_mod.question_list = []
     llm_mod = types.ModuleType("llm.llm")
     llm_mod.model_list = []
+    models_mod = types.ModuleType("models")
+    models_mod.AVAILABLE_MODELS = []
     sys.modules["llm"] = llm_pkg
     sys.modules["llm.questions"] = questions_mod
     sys.modules["llm.llm"] = llm_mod
+    sys.modules["models"] = models_mod
 
     sys.path.insert(0, "fastapi_app")
     main = importlib.import_module("main")
