@@ -1,0 +1,165 @@
+openapi: 3.0.3
+info:
+  title: PDF Processor API
+  version: "1.0.0"
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: Service is running
+  /pdfs:
+    get:
+      summary: List processed PDFs
+      responses:
+        '200':
+          description: List of PDFs
+    post:
+      summary: Process a PDF from a URI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                uri:
+                  type: string
+              required:
+                - uri
+            example:
+              uri: http://example.com/sample.pdf
+      responses:
+        '200':
+          description: Processing result
+  /pdfs/{uri}:
+    parameters:
+      - in: path
+        name: uri
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get PDF record by URI
+      responses:
+        '200':
+          description: PDF information
+        '404':
+          description: PDF not found
+    delete:
+      summary: Delete PDF record by URI
+      responses:
+        '200':
+          description: Deletion result
+        '404':
+          description: PDF not found
+  /convert/{uri}:
+    parameters:
+      - in: path
+        name: uri
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Manually trigger conversion
+      responses:
+        '200':
+          description: Conversion result
+        '404':
+          description: PDF not found
+  /convert/process-queue:
+    post:
+      summary: Process pending conversions
+      responses:
+        '200':
+          description: Queue processed
+  /stats:
+    get:
+      summary: Get processing statistics
+      responses:
+        '200':
+          description: Statistics
+  /duplicates:
+    get:
+      summary: Get duplicate content stats
+      responses:
+        '200':
+          description: Duplicate data
+  /deduplicate:
+    post:
+      summary: Update content hashes for existing files
+      responses:
+        '200':
+          description: Deduplication result
+  /extract/{paper_id}:
+    parameters:
+      - in: path
+        name: paper_id
+        required: true
+        schema:
+          type: integer
+    post:
+      summary: Trigger extraction for a PDF
+      responses:
+        '200':
+          description: Extraction result
+        '404':
+          description: PDF not found
+    get:
+      summary: Get extraction results
+      responses:
+        '200':
+          description: Extraction data
+        '404':
+          description: Not found
+  /extract/process-queue:
+    post:
+      summary: Process pending extractions
+      responses:
+        '200':
+          description: Queue processed
+  /extract/template:
+    get:
+      summary: Get extraction template
+      responses:
+        '200':
+          description: Template
+  /extract/{paper_id}/selective:
+    parameters:
+      - in: path
+        name: paper_id
+        required: true
+        schema:
+          type: integer
+    post:
+      summary: Selective extraction of fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                selected_fields:
+                  type: array
+                  items:
+                    type: string
+                selected_models:
+                  type: array
+                  items:
+                    type: string
+                selected_size:
+                  type: string
+              required:
+                - selected_fields
+            example:
+              selected_fields: ["title"]
+              selected_models: ["model1"]
+              selected_size: medium
+      responses:
+        '200':
+          description: Selective extraction result
+        '404':
+          description: PDF not found
+
