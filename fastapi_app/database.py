@@ -15,29 +15,29 @@ def init_database():
         cursor = conn.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS processed_pdfs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uri TEXT NOT NULL UNIQUE,
-                uri_hash TEXT NOT NULL,
-                content_hash TEXT,
-                filename TEXT NOT NULL,
-                file_path TEXT NOT NULL,
-                file_size INTEGER,
-                content_type TEXT,
-                is_downloaded BOOLEAN DEFAULT FALSE,
-                processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                status TEXT DEFAULT 'success',
-                error_message TEXT,
-                is_converted BOOLEAN DEFAULT FALSE,
-                conversion_started_at TIMESTAMP,
-                conversion_completed_at TIMESTAMP,
-                conversion_error TEXT,
-                text_file_path TEXT,
-                images_folder_path TEXT,
-                is_extracted BOOLEAN DEFAULT FALSE,
-                extraction_started_at TIMESTAMP,
-                extraction_completed_at TIMESTAMP,
-                extraction_error TEXT,
-                extraction_file_path TEXT
+                id INTEGER PRIMARY KEY AUTOINCREMENT,             -- unique identifier
+                uri TEXT NOT NULL UNIQUE,                         -- source URI of the PDF
+                uri_hash TEXT NOT NULL,                           -- hash of the URI for lookups
+                content_hash TEXT,                                -- hash of the downloaded file
+                filename TEXT NOT NULL,                           -- original filename
+                file_path TEXT NOT NULL,                          -- path to the downloaded PDF
+                file_size INTEGER,                                -- size on disk in bytes
+                content_type TEXT,                                -- HTTP content type from download
+                is_downloaded BOOLEAN DEFAULT FALSE,              -- whether the file was downloaded
+                processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- when the record was created
+                status TEXT DEFAULT 'success',                    -- success or error state
+                error_message TEXT,                               -- error details if any
+                is_converted BOOLEAN DEFAULT FALSE,               -- whether conversion to text/images finished
+                conversion_started_at TIMESTAMP,                  -- conversion start time
+                conversion_completed_at TIMESTAMP,                -- conversion completion time
+                conversion_error TEXT,                            -- error message from conversion
+                text_file_path TEXT,                              -- path to generated text file
+                images_folder_path TEXT,                          -- folder containing extracted images
+                is_extracted BOOLEAN DEFAULT FALSE,               -- whether extraction to structured data finished
+                extraction_started_at TIMESTAMP,                  -- extraction start time
+                extraction_completed_at TIMESTAMP,                -- extraction completion time
+                extraction_error TEXT,                            -- error message from extraction
+                extraction_file_path TEXT                         -- path to generated extraction file
             )
         """)
         
