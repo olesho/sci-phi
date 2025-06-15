@@ -376,10 +376,6 @@ def get_processing_stats() -> Dict:
         cursor.execute("SELECT SUM(file_size) as total_size FROM processed_pdfs WHERE is_downloaded = 1")
         total_size = cursor.fetchone()['total_size'] or 0
         
-        # Unique content count (deduplicated by content hash)
-        cursor.execute("SELECT COUNT(DISTINCT content_hash) as unique_content FROM processed_pdfs WHERE content_hash IS NOT NULL")
-        unique_content = cursor.fetchone()['unique_content']
-        
         return {
             "total_processed": total,
             "successful_downloads": successful,
@@ -388,8 +384,7 @@ def get_processing_stats() -> Dict:
             "pending_conversion": pending_conversion,
             "extracted_pdfs": extracted,
             "pending_extraction": pending_extraction,
-            "total_file_size_bytes": total_size,
-            "unique_content_files": unique_content
+            "total_file_size_bytes": total_size
         }
 
 

@@ -80,18 +80,6 @@ paths:
       responses:
         '200':
           description: Statistics
-  /duplicates:
-    get:
-      summary: Get duplicate content stats
-      responses:
-        '200':
-          description: Duplicate data
-  /deduplicate:
-    post:
-      summary: Update content hashes for existing files
-      responses:
-        '200':
-          description: Deduplication result
   /extract/{paper_id}:
     parameters:
       - in: path
