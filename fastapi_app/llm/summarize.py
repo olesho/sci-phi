@@ -187,8 +187,8 @@ def generate_summary(
         
         # Create new system message with size constraint
         updated_system = (
-            system_msg[0],
-            system_msg[1] + size_constraint
+            "system",
+            system_msg.prompt.template + size_constraint
         )
         messages[0] = updated_system
         
