@@ -172,6 +172,15 @@ if page == "📋 PDF List":
             on_select="rerun",
             selection_mode="single-row",
             key="pdf_table",
+            }
+        )
+        
+        # Show detailed view for selected PDF
+        st.subheader("PDF Details")
+        selected_indices = st.selectbox(
+            "Select a PDF to view details:",
+            options=range(len(pdfs)),
+            format_func=lambda i: f"{clean_filename(pdfs[i].get('filename', 'Unknown'))} - {pdfs[i].get('uri', '')[:30]}..."
         )
 
         selected_rows = df_state.get("selection", {}).get("rows", []) if isinstance(df_state, dict) else []
