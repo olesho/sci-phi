@@ -3,6 +3,15 @@ import requests
 import pandas as pd
 from datetime import datetime
 
+LEGACY_PREFIX = "downloaded_pdf_"
+
+
+def clean_filename(filename: str) -> str:
+    """Remove the legacy prefix from filenames for display."""
+    if filename and filename.startswith(LEGACY_PREFIX):
+        return filename[len(LEGACY_PREFIX):]
+    return filename
+
 st.set_page_config(page_title="PDF Processor", page_icon="📄", layout="wide")
 
 st.title("📄 PDF Processor Dashboard")
@@ -140,19 +149,16 @@ if page == "📋 PDF List":
             df_data.append({
                 "ID": pdf.get("id", ""),
                 "URI": pdf.get("uri", "")[:50] + "..." if len(pdf.get("uri", "")) > 50 else pdf.get("uri", ""),
-                "Filename": pdf.get("filename", ""),
+                "Filename": clean_filename(pdf.get("filename", "")),
                 "File Size (KB)": round(pdf.get("file_size", 0) / 1024, 2) if pdf.get("file_size") else 0,
                 "Status": "✅ Success" if pdf.get("status") == "success" else "❌ Error",
                 "Downloaded": "✅ Yes" if pdf.get("is_downloaded") else "❌ No",
                 "Converted": conversion_status,
-                "Extracted": extraction_status,
-                "Last Extraction": pdf.get("extraction_completed_at", "")[:19] if pdf.get("extraction_completed_at") else "",
                 "Processed At": pdf.get("processed_at", "")[:19] if pdf.get("processed_at") else ""
             })
         
         df = pd.DataFrame(df_data)
 
-        # Display the dataframe and allow selecting a single row
         df_state = st.dataframe(
             df,
             use_container_width=True,
@@ -162,8 +168,6 @@ if page == "📋 PDF List":
                 "Status": st.column_config.TextColumn("Status", width="small"),
                 "Downloaded": st.column_config.TextColumn("Downloaded", width="small"),
                 "Converted": st.column_config.TextColumn("Converted", width="medium"),
-                "Extracted": st.column_config.TextColumn("Extracted", width="medium"),
-                "Last Extraction": st.column_config.TextColumn("Last Extraction", width="medium"),
             },
             on_select="rerun",
             selection_mode="single-row",
@@ -176,11 +180,12 @@ if page == "📋 PDF List":
         if selected_idx is not None:
             st.subheader("PDF Details")
             selected_pdf = pdfs[selected_idx]
+
             
             col1, col2 = st.columns(2)
             with col1:
                 st.write("**ID:**", selected_pdf.get("id"))
-                st.write("**Filename:**", selected_pdf.get("filename"))
+                st.write("**Filename:**", clean_filename(selected_pdf.get("filename")))
                 st.write("**File Size:**", f"{selected_pdf.get('file_size', 0):,} bytes")
                 st.write("**Content Type:**", selected_pdf.get("content_type"))
                 st.write("**Status:**", selected_pdf.get("status"))
@@ -385,8 +390,8 @@ if page == "📋 PDF List":
                 file_list = "\n• ".join(files_to_delete) if files_to_delete else "No files to delete"
                 
                 st.warning(f"""⚠️ **Are you sure you want to delete this PDF?**
-                
-**Filename:** {selected_pdf.get('filename')}
+
+**Filename:** {clean_filename(selected_pdf.get('filename'))}
 **File Size:** {selected_pdf.get('file_size', 0):,} bytes
 
 **The following will be permanently deleted:**
@@ -614,13 +619,13 @@ elif page == "🎯 Selective Extraction":
     selected_pdf_idx = st.selectbox(
         "Choose a PDF for selective extraction:",
         options=range(len(converted_pdfs)),
-        format_func=lambda i: f"{converted_pdfs[i].get('filename', 'Unknown')} (ID: {converted_pdfs[i].get('id')})"
+        format_func=lambda i: f"{clean_filename(converted_pdfs[i].get('filename', 'Unknown'))} (ID: {converted_pdfs[i].get('id')})"
     )
     
     if selected_pdf_idx is not None:
         selected_pdf = converted_pdfs[selected_pdf_idx]
         
-        st.info(f"**Selected PDF:** {selected_pdf.get('filename')}")
+        st.info(f"**Selected PDF:** {clean_filename(selected_pdf.get('filename'))}")
         st.write(f"**URI:** {selected_pdf.get('uri')}")
         
         # Model Selection

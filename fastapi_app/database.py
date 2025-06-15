@@ -4,7 +4,7 @@ import hashlib
 from pathlib import Path
 from typing import List, Dict, Optional
 from contextlib import contextmanager
-from config import DATABASE_PATH
+from config import DATABASE_PATH, get_pdf_conversion_folder
 import os
 import shutil
 
@@ -32,12 +32,7 @@ def init_database():
                 conversion_completed_at TIMESTAMP,                -- conversion completion time
                 conversion_error TEXT,                            -- error message from conversion
                 text_file_path TEXT,                              -- path to generated text file
-                images_folder_path TEXT,                          -- folder containing extracted images
-                is_extracted BOOLEAN DEFAULT FALSE,               -- whether extraction to structured data finished
-                extraction_started_at TIMESTAMP,                  -- extraction start time
-                extraction_completed_at TIMESTAMP,                -- extraction completion time
-                extraction_error TEXT,                            -- error message from extraction
-                extraction_file_path TEXT                         -- path to generated extraction file
+                images_folder_path TEXT                           -- folder containing extracted images
             )
         """)
         
@@ -82,30 +77,7 @@ def init_database():
         except sqlite3.OperationalError:
             pass
         
-        try:
-            cursor.execute("ALTER TABLE processed_pdfs ADD COLUMN is_extracted BOOLEAN DEFAULT FALSE")
-        except sqlite3.OperationalError:
-            pass
-            
-        try:
-            cursor.execute("ALTER TABLE processed_pdfs ADD COLUMN extraction_started_at TIMESTAMP")
-        except sqlite3.OperationalError:
-            pass
-            
-        try:
-            cursor.execute("ALTER TABLE processed_pdfs ADD COLUMN extraction_completed_at TIMESTAMP")
-        except sqlite3.OperationalError:
-            pass
-            
-        try:
-            cursor.execute("ALTER TABLE processed_pdfs ADD COLUMN extraction_error TEXT")
-        except sqlite3.OperationalError:
-            pass
-            
-        try:
-            cursor.execute("ALTER TABLE processed_pdfs ADD COLUMN extraction_file_path TEXT")
-        except sqlite3.OperationalError:
-            pass
+        # Extraction tracking columns removed
         
         # Create index on hashes for faster lookups
         try:
@@ -242,13 +214,15 @@ def delete_processed_pdf(uri: str) -> bool:
         cursor = conn.cursor()
         
         # First, get the file paths before deleting the record
-        cursor.execute("SELECT file_path, text_file_path, images_folder_path, extraction_file_path FROM processed_pdfs WHERE uri = ?", (uri,))
+        cursor.execute("SELECT filename, file_path, text_file_path, images_folder_path FROM processed_pdfs WHERE uri = ?", (uri,))
         row = cursor.fetchone()
         
         if not row:
             return False  # Record not found
         
-        file_path, text_file_path, images_folder_path, extraction_file_path = row
+        filename, file_path, text_file_path, images_folder_path = row
+        extraction_folder = get_pdf_conversion_folder(filename) / "extraction"
+        extraction_file_path = extraction_folder / "extracted_data.json"
         
         # Delete the database record
         cursor.execute("DELETE FROM processed_pdfs WHERE uri = ?", (uri,))
@@ -364,13 +338,8 @@ def get_processing_stats() -> Dict:
         cursor.execute("SELECT COUNT(*) as pending FROM processed_pdfs WHERE is_downloaded = 1 AND is_converted = 0")
         pending_conversion = cursor.fetchone()['pending']
         
-        # Extracted PDFs
-        cursor.execute("SELECT COUNT(*) as extracted FROM processed_pdfs WHERE is_extracted = 1")
-        extracted = cursor.fetchone()['extracted']
-        
-        # Pending extraction
-        cursor.execute("SELECT COUNT(*) as pending FROM processed_pdfs WHERE is_converted = 1 AND is_extracted = 0")
-        pending_extraction = cursor.fetchone()['pending']
+        extracted = 0
+        pending_extraction = 0
         
         # Total file size
         cursor.execute("SELECT SUM(file_size) as total_size FROM processed_pdfs WHERE is_downloaded = 1")
@@ -430,43 +399,17 @@ def update_extraction_status(
     extraction_error: str = None,
     extraction_file_path: str = None
 ):
-    """Update extraction status for a PDF."""
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        
-        if extraction_started and not is_extracted:
-            # Starting extraction
-            cursor.execute("""
-                UPDATE processed_pdfs 
-                SET extraction_started_at = ?, extraction_error = NULL
-                WHERE uri = ?
-            """, (datetime.datetime.now(), uri))
-        elif is_extracted:
-            # Extraction completed successfully
-            cursor.execute("""
-                UPDATE processed_pdfs 
-                SET is_extracted = ?, extraction_completed_at = ?, 
-                    extraction_file_path = ?, extraction_error = NULL
-                WHERE uri = ?
-            """, (True, datetime.datetime.now(), extraction_file_path, uri))
-        elif extraction_error:
-            # Extraction failed
-            cursor.execute("""
-                UPDATE processed_pdfs 
-                SET extraction_error = ?
-                WHERE uri = ?
-            """, (extraction_error, uri))
-        
-        conn.commit()
+    """Deprecated: extraction tracking removed."""
+    return
 
 
 def get_pdfs_for_extraction() -> List[Dict]:
-    """Get PDFs that are converted but not extracted yet."""
+    """Get PDFs that are ready for extraction (converted)."""
     with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT * FROM processed_pdfs 
-            WHERE is_downloaded = 1 AND status = 'success' AND is_converted = 1 AND is_extracted = 0
+            SELECT * FROM processed_pdfs
+            WHERE is_downloaded = 1 AND status = 'success' AND is_converted = 1
             ORDER BY conversion_completed_at ASC
         """)
         rows = cursor.fetchall()
@@ -474,33 +417,5 @@ def get_pdfs_for_extraction() -> List[Dict]:
 
 
 def reset_interrupted_extractions() -> int:
-    """Find and reset extractions that were started but never completed (interrupted by server restart)."""
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        
-        # Find PDFs that have extraction_started_at but no extraction_completed_at and is_extracted = 0
-        # These are extractions that were interrupted
-        cursor.execute("""
-            SELECT id, uri FROM processed_pdfs 
-            WHERE extraction_started_at IS NOT NULL 
-            AND extraction_completed_at IS NULL 
-            AND is_extracted = 0
-            AND is_converted = 1
-        """)
-        
-        interrupted_extractions = cursor.fetchall()
-        
-        if interrupted_extractions:
-            # Reset the extraction status for interrupted extractions
-            cursor.execute("""
-                UPDATE processed_pdfs 
-                SET extraction_started_at = NULL, extraction_error = 'Extraction interrupted by server restart - will retry'
-                WHERE extraction_started_at IS NOT NULL 
-                AND extraction_completed_at IS NULL 
-                AND is_extracted = 0
-                AND is_converted = 1
-            """)
-            
-            conn.commit()
-            
-        return len(interrupted_extractions)
+    """Deprecated: extraction tracking removed."""
+    return 0
