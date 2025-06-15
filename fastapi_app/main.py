@@ -15,12 +15,7 @@ from config import resolve_file_path, get_pdf_conversion_folder
 from llm.questions import question_list
 from llm.llm import model_list
 import asyncio
-
-app = FastAPI(
-    title="PDF Processor API",
-    description="API for processing and storing PDF files with SQLite database integration, async conversion, and data extraction",
-    version="1.0.0"
-)
+from contextlib import asynccontextmanager
 
 async def restart_interrupted_conversions():
     """Background task to restart interrupted conversions."""
@@ -45,9 +40,9 @@ async def restart_interrupted_extractions():
     except Exception as e:
         print(f"Error restarting extractions: {str(e)}")
 
-# Initialize database on startup
-@app.on_event("startup")
-async def startup_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
     init_database()
     
     # Reset any conversions that were interrupted by server restart
@@ -71,7 +66,17 @@ async def startup_event():
         print("Started background task to restart interrupted extractions")
     else:
         print("No interrupted extractions found")
+    
+    yield
+    # Shutdown
+    # Add any cleanup code here if needed
 
+app = FastAPI(
+    title="PDF Processor API",
+    description="API for processing and storing PDF files with SQLite database integration, async conversion, and data extraction",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
 @app.get("/health")
 def health():
