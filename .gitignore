@@ -8,3 +8,7 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Database files
+processed_pdfs.db
+fastapi_app/processed_pdfs.db

@@ -76,7 +76,7 @@ def process_pdf(data: ProcessInputData):
         # Extract filename from URL
         filename = os.path.basename(parsed_url.path)
         if not filename or not filename.endswith('.pdf'):
-            filename = f"downloaded_pdf_{hash(data.uri) % 10000}.pdf"
+            filename = f"pdf_{hash(data.uri) % 10000}.pdf"
         
         # Full path for the downloaded file using centralized config
         file_path = get_pdf_file_path(filename)
