@@ -151,15 +151,13 @@ if page == "📋 PDF List":
             })
         
         df = pd.DataFrame(df_data)
-        df.insert(0, "Select", False)
 
-        # Display the dataframe with selectable rows
-        edited_df = st.data_editor(
+        # Display the dataframe and allow selecting a single row
+        df_state = st.dataframe(
             df,
             use_container_width=True,
             hide_index=True,
             column_config={
-                "Select": st.column_config.CheckboxColumn("Select"),
                 "URI": st.column_config.TextColumn("URI", width="medium"),
                 "Status": st.column_config.TextColumn("Status", width="small"),
                 "Downloaded": st.column_config.TextColumn("Downloaded", width="small"),
@@ -167,11 +165,12 @@ if page == "📋 PDF List":
                 "Extracted": st.column_config.TextColumn("Extracted", width="medium"),
                 "Last Extraction": st.column_config.TextColumn("Last Extraction", width="medium"),
             },
-            disabled=[c for c in df.columns if c != "Select"],
+            on_select="rerun",
+            selection_mode="single-row",
             key="pdf_table",
         )
 
-        selected_rows = edited_df.index[edited_df["Select"]].tolist()
+        selected_rows = df_state.get("selection", {}).get("rows", []) if isinstance(df_state, dict) else []
         selected_idx = selected_rows[0] if selected_rows else None
 
         if selected_idx is not None:
