@@ -2,6 +2,8 @@
 
 A FastAPI application for processing scientific papers in PDF format.
 
+**Requires Python 3.12 or newer.**
+
 ## Quick Start
 
 **Development (with hot reload, excluding data directory):**
