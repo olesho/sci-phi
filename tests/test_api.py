@@ -130,12 +130,14 @@ def load_spec():
 
 
 def test_openapi_valid():
+    """Check that the OpenAPI specification loads and exposes basic endpoints."""
     spec = load_spec()
     assert "paths" in spec
     assert "/health" in spec["paths"]
 
 
 def test_endpoints_from_spec(app):
+    """Ensure each endpoint defined in the spec responds without server errors."""
     client = TestClient(app)
     spec = load_spec()
     for path, operations in spec["paths"].items():
@@ -159,6 +161,7 @@ def test_endpoints_from_spec(app):
 
 
 def test_selective_extraction(app):
+    """Verify that the selective extraction endpoint returns the expected data."""
     client = TestClient(app)
     payload = {
         "selected_fields": ["title", "abstract"],
