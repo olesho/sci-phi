@@ -104,6 +104,13 @@ async def convert_pdf_async(uri: str) -> Dict:
         logger.info(f"Images saved to: {images_folder}")
         logger.info(f"Total images extracted: {len(image_paths)}")
         
+        # Trigger extraction after successful conversion
+        try:
+            from extraction_service import trigger_extraction_background
+            trigger_extraction_background(uri)
+        except Exception as e:
+            logger.warning(f"Failed to trigger extraction for {uri}: {str(e)}")
+        
         return {
             "success": True,
             "uri": uri,

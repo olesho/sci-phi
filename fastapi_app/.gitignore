@@ -1,1 +1,3 @@
 data/
+.langchain.db
+processed_pdfs.db

@@ -32,7 +32,12 @@ def init_database():
                 conversion_completed_at TIMESTAMP,
                 conversion_error TEXT,
                 text_file_path TEXT,
-                images_folder_path TEXT
+                images_folder_path TEXT,
+                is_extracted BOOLEAN DEFAULT FALSE,
+                extraction_started_at TIMESTAMP,
+                extraction_completed_at TIMESTAMP,
+                extraction_error TEXT,
+                extraction_file_path TEXT
             )
         """)
         
@@ -74,6 +79,31 @@ def init_database():
             
         try:
             cursor.execute("ALTER TABLE processed_pdfs ADD COLUMN images_folder_path TEXT")
+        except sqlite3.OperationalError:
+            pass
+        
+        try:
+            cursor.execute("ALTER TABLE processed_pdfs ADD COLUMN is_extracted BOOLEAN DEFAULT FALSE")
+        except sqlite3.OperationalError:
+            pass
+            
+        try:
+            cursor.execute("ALTER TABLE processed_pdfs ADD COLUMN extraction_started_at TIMESTAMP")
+        except sqlite3.OperationalError:
+            pass
+            
+        try:
+            cursor.execute("ALTER TABLE processed_pdfs ADD COLUMN extraction_completed_at TIMESTAMP")
+        except sqlite3.OperationalError:
+            pass
+            
+        try:
+            cursor.execute("ALTER TABLE processed_pdfs ADD COLUMN extraction_error TEXT")
+        except sqlite3.OperationalError:
+            pass
+            
+        try:
+            cursor.execute("ALTER TABLE processed_pdfs ADD COLUMN extraction_file_path TEXT")
         except sqlite3.OperationalError:
             pass
         
@@ -188,6 +218,15 @@ def get_processed_pdf(uri: str) -> Optional[Dict]:
         return dict(row) if row else None
 
 
+def get_processed_pdf_by_id(paper_id: int) -> Optional[Dict]:
+    """Retrieve information about a processed PDF by ID."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM processed_pdfs WHERE id = ?", (paper_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+
 def get_all_processed_pdfs() -> List[Dict]:
     """Retrieve all processed PDF records."""
     with get_db_connection() as conn:
@@ -203,13 +242,13 @@ def delete_processed_pdf(uri: str) -> bool:
         cursor = conn.cursor()
         
         # First, get the file paths before deleting the record
-        cursor.execute("SELECT file_path, text_file_path, images_folder_path FROM processed_pdfs WHERE uri = ?", (uri,))
+        cursor.execute("SELECT file_path, text_file_path, images_folder_path, extraction_file_path FROM processed_pdfs WHERE uri = ?", (uri,))
         row = cursor.fetchone()
         
         if not row:
             return False  # Record not found
         
-        file_path, text_file_path, images_folder_path = row
+        file_path, text_file_path, images_folder_path, extraction_file_path = row
         
         # Delete the database record
         cursor.execute("DELETE FROM processed_pdfs WHERE uri = ?", (uri,))
@@ -229,6 +268,17 @@ def delete_processed_pdf(uri: str) -> bool:
                 # Delete the images folder from conversion
                 if images_folder_path and Path(images_folder_path).exists():
                     shutil.rmtree(images_folder_path)
+                
+                # Delete the extraction file
+                if extraction_file_path and Path(extraction_file_path).exists():
+                    os.remove(extraction_file_path)
+                    # Also try to remove the extraction folder if it's empty
+                    try:
+                        extraction_folder = Path(extraction_file_path).parent
+                        if extraction_folder.exists() and extraction_folder.name == "extraction":
+                            extraction_folder.rmdir()  # Only removes if empty
+                    except OSError:
+                        pass  # Folder not empty or other issue
                     
             except Exception as e:
                 print(f"Warning: Could not delete some files for {uri}: {str(e)}")
@@ -314,6 +364,14 @@ def get_processing_stats() -> Dict:
         cursor.execute("SELECT COUNT(*) as pending FROM processed_pdfs WHERE is_downloaded = 1 AND is_converted = 0")
         pending_conversion = cursor.fetchone()['pending']
         
+        # Extracted PDFs
+        cursor.execute("SELECT COUNT(*) as extracted FROM processed_pdfs WHERE is_extracted = 1")
+        extracted = cursor.fetchone()['extracted']
+        
+        # Pending extraction
+        cursor.execute("SELECT COUNT(*) as pending FROM processed_pdfs WHERE is_converted = 1 AND is_extracted = 0")
+        pending_extraction = cursor.fetchone()['pending']
+        
         # Total file size
         cursor.execute("SELECT SUM(file_size) as total_size FROM processed_pdfs WHERE is_downloaded = 1")
         total_size = cursor.fetchone()['total_size'] or 0
@@ -328,6 +386,8 @@ def get_processing_stats() -> Dict:
             "failed_attempts": failed,
             "converted_pdfs": converted,
             "pending_conversion": pending_conversion,
+            "extracted_pdfs": extracted,
+            "pending_extraction": pending_extraction,
             "total_file_size_bytes": total_size,
             "unique_content_files": unique_content
         }
@@ -365,4 +425,87 @@ def reset_interrupted_conversions() -> int:
             
             conn.commit()
             
-        return len(interrupted_conversions) 
+        return len(interrupted_conversions)
+
+
+def update_extraction_status(
+    uri: str,
+    is_extracted: bool = False,
+    extraction_started: bool = False,
+    extraction_error: str = None,
+    extraction_file_path: str = None
+):
+    """Update extraction status for a PDF."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        
+        if extraction_started and not is_extracted:
+            # Starting extraction
+            cursor.execute("""
+                UPDATE processed_pdfs 
+                SET extraction_started_at = ?, extraction_error = NULL
+                WHERE uri = ?
+            """, (datetime.datetime.now(), uri))
+        elif is_extracted:
+            # Extraction completed successfully
+            cursor.execute("""
+                UPDATE processed_pdfs 
+                SET is_extracted = ?, extraction_completed_at = ?, 
+                    extraction_file_path = ?, extraction_error = NULL
+                WHERE uri = ?
+            """, (True, datetime.datetime.now(), extraction_file_path, uri))
+        elif extraction_error:
+            # Extraction failed
+            cursor.execute("""
+                UPDATE processed_pdfs 
+                SET extraction_error = ?
+                WHERE uri = ?
+            """, (extraction_error, uri))
+        
+        conn.commit()
+
+
+def get_pdfs_for_extraction() -> List[Dict]:
+    """Get PDFs that are converted but not extracted yet."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT * FROM processed_pdfs 
+            WHERE is_downloaded = 1 AND status = 'success' AND is_converted = 1 AND is_extracted = 0
+            ORDER BY conversion_completed_at ASC
+        """)
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+
+
+def reset_interrupted_extractions() -> int:
+    """Find and reset extractions that were started but never completed (interrupted by server restart)."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        
+        # Find PDFs that have extraction_started_at but no extraction_completed_at and is_extracted = 0
+        # These are extractions that were interrupted
+        cursor.execute("""
+            SELECT id, uri FROM processed_pdfs 
+            WHERE extraction_started_at IS NOT NULL 
+            AND extraction_completed_at IS NULL 
+            AND is_extracted = 0
+            AND is_converted = 1
+        """)
+        
+        interrupted_extractions = cursor.fetchall()
+        
+        if interrupted_extractions:
+            # Reset the extraction status for interrupted extractions
+            cursor.execute("""
+                UPDATE processed_pdfs 
+                SET extraction_started_at = NULL, extraction_error = 'Extraction interrupted by server restart - will retry'
+                WHERE extraction_started_at IS NOT NULL 
+                AND extraction_completed_at IS NULL 
+                AND is_extracted = 0
+                AND is_converted = 1
+            """)
+            
+            conn.commit()
+            
+        return len(interrupted_extractions)

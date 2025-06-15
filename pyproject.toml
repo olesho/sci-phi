@@ -7,6 +7,10 @@ requires-python = ">=3.13"
 dependencies = [
     "fastapi[standard]>=0.115.12",
     "langchain>=0.3.25",
+    "langchain-community>=0.3.24",
+    "langchain-groq>=0.3.2",
+    "langchain-ollama>=0.3.3",
+    "langchain-openai>=0.3.19",
     "marker-pdf>=1.7.4",
     "requests>=2.31.0",
     "streamlit>=1.45.1",

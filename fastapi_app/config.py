@@ -10,6 +10,11 @@ DATA_DIR = BASE_DIR / "data"
 # Database file path
 DATABASE_PATH = BASE_DIR / "processed_pdfs.db"
 
+# Text processing configuration
+TEXT_PROCESSING_STRATEGY = os.getenv("TEXT_PROCESSING_STRATEGY", "intelligent")  # intelligent, truncate, chunk, extract_key
+MAX_CHUNK_OVERLAP = int(os.getenv("MAX_CHUNK_OVERLAP", "200"))  # Characters to overlap between chunks
+ENABLE_CONTEXT_WARNINGS = os.getenv("ENABLE_CONTEXT_WARNINGS", "true").lower() == "true"
+
 # Ensure data directory exists
 DATA_DIR.mkdir(exist_ok=True)
 
@@ -59,4 +64,7 @@ def resolve_file_path(file_path: str) -> Path:
 if __name__ == "__main__":
     print(f"BASE_DIR: {BASE_DIR}")
     print(f"DATA_DIR: {DATA_DIR}")
-    print(f"DATABASE_PATH: {DATABASE_PATH}") 
+    print(f"DATABASE_PATH: {DATABASE_PATH}")
+    print(f"TEXT_PROCESSING_STRATEGY: {TEXT_PROCESSING_STRATEGY}")
+    print(f"MAX_CHUNK_OVERLAP: {MAX_CHUNK_OVERLAP}")
+    print(f"ENABLE_CONTEXT_WARNINGS: {ENABLE_CONTEXT_WARNINGS}") 
